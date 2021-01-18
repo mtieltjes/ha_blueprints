@@ -1,0 +1,54 @@
+blueprint:
+  name: Sonos volume normalization
+  description: Normalizes the Sonos volume when switching between TV and music
+  domain: automation
+  input:
+    media_player:
+      name: Sonos instance
+      description: The volume of this Sonos (connected to a TV) will be normalized based on its source
+      selector:
+        entity:
+          domain: media_player
+    tv_volume:
+      name: TV volume
+      description: Preferred (initial) volume when watching TV (0-1, where 1 is 100%)
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.01
+          mode: slider
+    music_volume:
+      name: Music volume
+      description: Preferred (initial) volume when listening to music (0-1, where 1 is 100%)
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.01
+          mode: slider
+
+alias: Normalize Livingroom Sonos volume
+description: >-
+  The volume of TV is much lower than the volume of music playing. Therefore,
+  when playing TV, set volume to relatively high, and when switching to other
+  sources reset the volume to low.
+trigger:
+  - platform: state
+    entity_id: !input media_player
+    attribute: source
+variables:
+  tv_volume_level: !input tv_volume
+  music_volume_level: !input music_volume
+action:
+  - service: media_player.volume_set
+    target: 
+      entity_id: !input media_player
+    data:
+      volume_level: >
+        {% if trigger.to_state.attributes.source == "TV" %}
+          {{ tv_volume_level }}
+        {% else %}
+          {{ music_volume_level }}
+        {% endif %}
+mode: restart
